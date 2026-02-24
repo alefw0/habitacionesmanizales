@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Listing } from "@/types";
 
 // All admin calls go through /api/admin/* (Next.js API route) — token is
@@ -18,7 +19,8 @@ export default function AdminPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState<string | null>(null); // id del listing en proceso
+  const [busy, setBusy] = useState<string | null>(null);
+  const router = useRouter();
 
   async function fetchPending() {
     setLoading(true);
@@ -74,6 +76,15 @@ export default function AdminPage() {
     }
   }
 
+  async function handleLogout() {
+    try {
+      await fetch("/api/admin/auth/logout", { method: "POST" });
+      router.push("/admin/login");
+    } catch (err) {
+      alert("Error al cerrar sesión");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm">
@@ -81,9 +92,17 @@ export default function AdminPage() {
           <span className="text-lg font-bold text-blue-900">
             Admin — Estudia y Vive en Manizales
           </span>
-          <a href="/" className="text-sm text-blue-600 hover:underline">
-            Ver sitio
-          </a>
+          <div className="flex gap-4">
+            <a href="/" className="text-sm text-blue-600 hover:underline">
+              Ver sitio
+            </a>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-red-600 hover:text-red-700 font-medium"
+            >
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </nav>
 
