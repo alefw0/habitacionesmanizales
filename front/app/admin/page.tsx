@@ -23,7 +23,7 @@ export default function AdminPage() {
   async function fetchPending() {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/listings/pending");
+      const res = await fetch("/api/admin/listings?action=pending");
       if (!res.ok) throw new Error(`Error ${res.status}`);
       const data: Listing[] = await res.json();
       setListings(Array.isArray(data) ? data : []);
@@ -42,7 +42,7 @@ export default function AdminPage() {
   async function publish(id: string) {
     setBusy(id);
     try {
-      const res = await fetch(`/api/admin/listings/${id}/publish`, {
+      const res = await fetch(`/api/admin/listings?id=${id}&action=publish`, {
         method: "PATCH",
       });
       if (!res.ok) throw new Error(`Error ${res.status}`);
@@ -58,7 +58,7 @@ export default function AdminPage() {
     if (!confirm("¿Eliminar este anuncio permanentemente?")) return;
     setBusy(id);
     try {
-      const res = await fetch(`/api/admin/listings/${id}`, {
+      const res = await fetch(`/api/admin/listings?id=${id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error(`Error ${res.status}`);
@@ -100,7 +100,7 @@ export default function AdminPage() {
         {!loading && error && (
           <p className="text-red-600">
             {error === "Error 403"
-              ? "Token inválido. Revisa NEXT_PUBLIC_ADMIN_TOKEN en .env.local"
+              ? "Token inválido. Revisa ADMIN_TOKEN en variables de entorno"
               : error}
           </p>
         )}
