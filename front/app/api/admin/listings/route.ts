@@ -1,1 +1,157 @@
-import { NextRequest, NextResponse } from \"next/server\";\n\n/**\n * Proxy unificado para operaciones admin en listings:\n * - GET /api/admin/listings?action=pending → GET /admin/listings/pending\n * - PATCH /api/admin/listings?id={id}&action=publish → PATCH /admin/listings/{id}/publish\n * - PATCH /api/admin/listings?id={id}&action=unpublish → PATCH /admin/listings/{id}/unpublish\n * - DELETE /api/admin/listings?id={id} → DELETE /admin/listings/{id}\n */\n\nconst BACKEND_URL = process.env.BACKEND_URL || \"http://127.0.0.1:8000\";\nconst ADMIN_TOKEN = process.env.ADMIN_TOKEN || \"\";\n\nif (!ADMIN_TOKEN) {\n  console.warn(\"⚠️  ADMIN_TOKEN no está configurado\");\n}\n\nexport async function GET(request: NextRequest) {\n  const { searchParams } = new URL(request.url);\n  const action = searchParams.get(\"action\");\n\n  // GET /api/admin/listings?action=pending\n  if (action === \"pending\") {\n    return handleGetPending();\n  }\n\n  return NextResponse.json(\n    { error: \"Acción no reconocida. Use ?action=pending\" },\n    { status: 400 }\n  );\n}\n\nexport async function PATCH(request: NextRequest) {\n  const { searchParams } = new URL(request.url);\n  const id = searchParams.get(\"id\");\n  const action = searchParams.get(\"action\");\n\n  if (!id) {\n    return NextResponse.json(\n      { error: \"Falta parámetro: id\" },\n      { status: 400 }\n    );\n  }\n\n  if (action === \"publish\") {\n    return handlePublish(id);\n  } else if (action === \"unpublish\") {\n    return handleUnpublish(id);\n  }\n\n  return NextResponse.json(\n    { error: \"Acción no reconocida. Use ?action=publish o ?action=unpublish\" },\n    { status: 400 }\n  );\n}\n\nexport async function DELETE(request: NextRequest) {\n  const { searchParams } = new URL(request.url);\n  const id = searchParams.get(\"id\");\n\n  if (!id) {\n    return NextResponse.json(\n      { error: \"Falta parámetro: id\" },\n      { status: 400 }\n    );\n  }\n\n  return handleDelete(id);\n}\n\nasync function handleGetPending() {\n  const url = `${BACKEND_URL}/admin/listings/pending`;\n\n  try {\n    const res = await fetch(url, {\n      method: \"GET\",\n      headers: {\n        \"X-Admin-Token\": ADMIN_TOKEN,\n      },\n    });\n\n    const data = await res.json();\n    return NextResponse.json(data, { status: res.status });\n  } catch (err) {\n    console.error(\"Error en proxy pending:\", err);\n    return NextResponse.json(\n      { error: \"Error al obtener listados pendientes\" },\n      { status: 500 }\n    );\n  }\n}\n\nasync function handlePublish(id: string) {\n  const url = `${BACKEND_URL}/admin/listings/${id}/publish`;\n\n  try {\n    const res = await fetch(url, {\n      method: \"PATCH\",\n      headers: {\n        \"X-Admin-Token\": ADMIN_TOKEN,\n      },\n    });\n\n    const data = await res.json();\n    return NextResponse.json(data, { status: res.status });\n  } catch (err) {\n    console.error(\"Error en proxy publish:\", err);\n    return NextResponse.json(\n      { error: \"Error al publicar anuncio\" },\n      { status: 500 }\n    );\n  }\n}\n\nasync function handleUnpublish(id: string) {\n  const url = `${BACKEND_URL}/admin/listings/${id}/unpublish`;\n\n  try {\n    const res = await fetch(url, {\n      method: \"PATCH\",\n      headers: {\n        \"X-Admin-Token\": ADMIN_TOKEN,\n      },\n    });\n\n    const data = await res.json();\n    return NextResponse.json(data, { status: res.status });\n  } catch (err) {\n    console.error(\"Error en proxy unpublish:\", err);\n    return NextResponse.json(\n      { error: \"Error al despublicar anuncio\" },\n      { status: 500 }\n    );\n  }\n}\n\nasync function handleDelete(id: string) {\n  const url = `${BACKEND_URL}/admin/listings/${id}`;\n\n  try {\n    const res = await fetch(url, {\n      method: \"DELETE\",\n      headers: {\n        \"X-Admin-Token\": ADMIN_TOKEN,\n      },\n    });\n\n    const data = await res.json();\n    return NextResponse.json(data, { status: res.status });\n  } catch (err) {\n    console.error(\"Error en proxy delete:\", err);\n    return NextResponse.json(\n      { error: \"Error al eliminar anuncio\" },\n      { status: 500 }\n    );\n  }\n}\n"
+import { NextRequest, NextResponse } from "next/server";
+
+/**
+ * Proxy unificado para operaciones admin en listings:
+ * - GET /api/admin/listings?action=pending → GET /admin/listings/pending
+ * - PATCH /api/admin/listings?id={id}&action=publish → PATCH /admin/listings/{id}/publish
+ * - PATCH /api/admin/listings?id={id}&action=unpublish → PATCH /admin/listings/{id}/unpublish
+ * - DELETE /api/admin/listings?id={id} → DELETE /admin/listings/{id}
+ */
+
+const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8000";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
+
+if (!ADMIN_TOKEN) {
+  console.warn("⚠️  ADMIN_TOKEN no está configurado");
+}
+
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const action = searchParams.get("action");
+
+  // GET /api/admin/listings?action=pending
+  if (action === "pending") {
+    return handleGetPending();
+  }
+
+  return NextResponse.json(
+    { error: "Acción no reconocida. Use ?action=pending" },
+    { status: 400 }
+  );
+}
+
+export async function PATCH(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const action = searchParams.get("action");
+
+  if (!id) {
+    return NextResponse.json(
+      { error: "Falta parámetro: id" },
+      { status: 400 }
+    );
+  }
+
+  if (action === "publish") {
+    return handlePublish(id);
+  } else if (action === "unpublish") {
+    return handleUnpublish(id);
+  }
+
+  return NextResponse.json(
+    { error: "Acción no reconocida. Use ?action=publish o ?action=unpublish" },
+    { status: 400 }
+  );
+}
+
+export async function DELETE(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json(
+      { error: "Falta parámetro: id" },
+      { status: 400 }
+    );
+  }
+
+  return handleDelete(id);
+}
+
+async function handleGetPending() {
+  const url = `${BACKEND_URL}/admin/listings/pending`;
+
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "X-Admin-Token": ADMIN_TOKEN,
+      },
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("Error en proxy pending:", err);
+    return NextResponse.json(
+      { error: "Error al obtener listados pendientes" },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePublish(id: string) {
+  const url = `${BACKEND_URL}/admin/listings/${id}/publish`;
+
+  try {
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        "X-Admin-Token": ADMIN_TOKEN,
+      },
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("Error en proxy publish:", err);
+    return NextResponse.json(
+      { error: "Error al publicar anuncio" },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleUnpublish(id: string) {
+  const url = `${BACKEND_URL}/admin/listings/${id}/unpublish`;
+
+  try {
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        "X-Admin-Token": ADMIN_TOKEN,
+      },
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("Error en proxy unpublish:", err);
+    return NextResponse.json(
+      { error: "Error al despublicar anuncio" },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleDelete(id: string) {
+  const url = `${BACKEND_URL}/admin/listings/${id}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        "X-Admin-Token": ADMIN_TOKEN,
+      },
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("Error en proxy delete:", err);
+    return NextResponse.json(
+      { error: "Error al eliminar anuncio" },
+      { status: 500 }
+    );
+  }
+}
