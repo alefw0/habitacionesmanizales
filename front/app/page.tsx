@@ -75,15 +75,14 @@ export default function Home() {
           <span className="text-lg font-bold text-blue-900 sm:text-xl">
             Estudia&Vive Manizales
           </span>
-          <button
-            type="button"
-            onClick={() => {
-              window.location.href = "https://tally.so/r/MebgPM";
-            }}
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-700 sm:px-6"
+          <a
+            href="https://tally.so/r/MebgPM"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-700 sm:px-6 inline-block"
           >
-            Publicar Habitación
-          </button>
+            Publicar Habitación ↗
+          </a>
         </div>
       </nav>
 
