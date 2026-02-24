@@ -12,7 +12,8 @@ const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8000";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 
 if (!ADMIN_TOKEN) {
-  console.warn("⚠️  ADMIN_TOKEN no está configurado");
+  console.warn("⚠️  ADMIN_TOKEN no está configurado en el servidor Vercel");
+  console.warn("BACKEND_URL:", BACKEND_URL);
 }
 
 export async function GET(request: NextRequest) {
