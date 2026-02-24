@@ -1,5 +1,5 @@
 {
   "buildCommand": "cd front && npm run build",
   "outputDirectory": "front/.next",
-  "installCommand": "cd front && npm install"
+  "installCommand": "cd front && npm ci --legacy-peer-deps"
 }
