@@ -79,9 +79,9 @@ export default function Home() {
             href="https://tally.so/r/MebgPM"
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-700 sm:px-6 inline-block"
+            className="rounded-full bg-orange-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-orange-600 sm:px-6 inline-block"
           >
-            Publicar Habitación ↗
+            Publicar Habitación →
           </a>
         </div>
       </nav>
