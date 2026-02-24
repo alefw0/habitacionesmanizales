@@ -1,62 +1,92 @@
-/**
- * Next.js API route that proxies all /api/admin/* requests to the FastAPI
- * backend's /admin/* endpoints, injecting the ADMIN_TOKEN server-side.
- *
- * The token is read from the server-side env var ADMIN_TOKEN (not
- * NEXT_PUBLIC_ADMIN_TOKEN), so it is never sent to the browser.
- */
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? "";
+/**
+ * Ruta de proxy segura para endpoints de administración.
+ * El token ADMIN_TOKEN se lee del servidor (nunca se expone al navegador).
+ * Todos los requests desde el cliente van aquí, y esta ruta agrega el header
+ * X-Admin-Token antes de llamar al backend.
+ */
+
+const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8000";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  return proxy(request, await params, "GET");
+  const path = (await params).path;
+  const pathStr = path.join("/");
+  const url = `${BACKEND_URL}/admin/${pathStr}${request.nextUrl.search}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "X-Admin-Token": ADMIN_TOKEN,
+      },
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "Error proxying request to backend" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  return proxy(request, await params, "PATCH");
+  const path = (await params).path;
+  const pathStr = path.join("/");
+  const url = `${BACKEND_URL}/admin/${pathStr}${request.nextUrl.search}`;
+
+  try {
+    const body = await request.json().catch(() => ({}));
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        "X-Admin-Token": ADMIN_TOKEN,
+        "Content-Type": "application/json",
+      },
+      body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "Error proxying PATCH request to backend" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  return proxy(request, await params, "DELETE");
-}
+  const path = (await params).path;
+  const pathStr = path.join("/");
+  const url = `${BACKEND_URL}/admin/${pathStr}${request.nextUrl.search}`;
 
-async function proxy(
-  request: NextRequest,
-  params: { path: string[] },
-  method: string
-) {
-  if (!ADMIN_TOKEN) {
+  try {
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        "X-Admin-Token": ADMIN_TOKEN,
+      },
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
     return NextResponse.json(
-      { error: "ADMIN_TOKEN not configured on server" },
+      { error: "Error proxying DELETE request to backend" },
       { status: 500 }
     );
   }
-
-  const backendPath = params.path.join("/");
-  const url = `${BACKEND_URL}/admin/${backendPath}`;
-
-  const body = method !== "GET" ? await request.text() : undefined;
-
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Admin-Token": ADMIN_TOKEN,
-    },
-    body: body || undefined,
-  });
-
-  const data = await res.json().catch(() => null);
-  return NextResponse.json(data, { status: res.status });
 }
