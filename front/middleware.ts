@@ -8,8 +8,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Check auth for /admin and other /admin/* routes
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+  // Check auth for /admin page and other /admin/* routes (except /admin/login)
+  if (pathname === "/admin" || (pathname.startsWith("/admin/") && pathname !== "/admin/login")) {
     const session = request.cookies.get("admin_session");
     if (!session || session.value !== "authenticated") {
       return NextResponse.redirect(new URL("/admin/login", request.url));
@@ -18,5 +18,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin", "/admin/:path*"],
 };
