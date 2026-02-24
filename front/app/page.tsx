@@ -60,7 +60,9 @@ export default function Home() {
           </span>
           <button
             type="button"
-            onClick={() => alert("Pronto abriremos inscripciones para arrendadores")}
+            onClick={() => {
+              window.location.href = "https://tally.so/r/MebgPM";
+            }}
             className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-700 sm:px-6"
           >
             Publicar Habitación
