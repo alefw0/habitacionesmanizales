@@ -5,8 +5,9 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import type { Listing } from "@/types";
 
-const ADMIN_TOKEN = process.env.NEXT_PUBLIC_BACKEND_ADMIN_TOKEN || "";
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://habitacionesmanizales-production.up.railway.app";
+// Env vars que se cargarán de forma dinámica desde /api/config
+let ADMIN_TOKEN = "";
+let BACKEND_URL = "https://habitacionesmanizales-production.up.railway.app";
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("es-CO", {
@@ -16,14 +17,26 @@ function formatPrice(price: number): string {
   }).format(price);
 }
 
+async function loadConfig() {
+  try {
+    const res = await fetch("/api/config");
+    const config = await res.json();
+    ADMIN_TOKEN = config.BACKEND_ADMIN_TOKEN || "";
+    BACKEND_URL = config.BACKEND_URL || "https://habitacionesmanizales-production.up.railway.app";
+    console.log("Config loaded:", { BACKEND_URL, TOKEN: ADMIN_TOKEN ? "SET" : "MISSING" });
+  } catch (err) {
+    console.error("Error loading config:", err);
+  }
+}
+
 export default function DashboardPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [configLoaded, setConfigLoaded] = useState(false);
 
-  // Mostrar error si no hay token
-  if (!ADMIN_TOKEN) {
+  if (configLoaded && !ADMIN_TOKEN) {
     return (
       <div className="min-h-screen bg-gray-50">
         <nav className="sticky top-0 z-40 bg-white shadow-sm">
@@ -44,6 +57,15 @@ export default function DashboardPage() {
   async function fetchListings() {
     setLoading(true);
     try {
+      // Cargar config si no está lista
+      if (!ADMIN_TOKEN) {
+        await loadConfig();
+      }
+      
+      if (!ADMIN_TOKEN) {
+        throw new Error("Token de administrador no configurado");
+      }
+
       // Llamar directamente al backend (sin rewrite)
       const url = `${BACKEND_URL}/admin/listings/all`;
       console.log("Fetching from:", url);
@@ -69,7 +91,7 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    fetchListings();
+    loadConfig().then(() => setConfigLoaded(true)).finally(() => fetchListings());
   }, []);
 
   async function unpublish(id: string) {
