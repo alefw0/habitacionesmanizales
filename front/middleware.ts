@@ -2,28 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  
-  // Allow /login without authentication
-  if (pathname === "/login") {
-    return NextResponse.next();
-  }
-  
-  // Allow /admin (login page) without authentication
-  if (pathname === "/admin") {
+
+  // Rutas públicas (libre acceso)
+  if (pathname === "/login" || pathname === "/") {
     return NextResponse.next();
   }
 
-  // Check auth for /admin/dashboard and other protected routes
-  if (pathname.startsWith("/admin/")) {
+  // Proteger /admin y cualquier subruta /admin/*
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     const session = request.cookies.get("admin_session");
-    if (session && session.value === "authenticated") {
+    if (session?.value === "authenticated") {
       return NextResponse.next();
     }
-    // Redirect to login if not authenticated
-    return NextResponse.redirect(new URL("/admin", request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
+
+  // Cualquier otra ruta pública
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

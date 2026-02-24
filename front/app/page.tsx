@@ -1,8 +1,25 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import ListingCard from "@/components/ListingCard";
 import type { Listing } from "@/types";
+
+function SuccessBanner() {
+  const searchParams = useSearchParams();
+  const success = searchParams.get("success");
+
+  if (success !== "true") return null;
+
+  return (
+    <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-md">
+      <p className="text-green-900 font-medium">
+        ¡Gracias! Tu anuncio ha sido enviado con éxito. Nuestro equipo lo
+        revisará y será publicado en breve.
+      </p>
+    </div>
+  );
+}
 
 export default function Home() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -136,6 +153,10 @@ export default function Home() {
 
       {/* Sección de Habitaciones */}
       <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <Suspense fallback={null}>
+          <SuccessBanner />
+        </Suspense>
+
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
             Alojamientos Disponibles
