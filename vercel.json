@@ -1,1 +1,5 @@
-{\n  \"buildCommand\": \"cd front && npm run build\",\n  \"outputDirectory\": \"front/.next\",\n  \"installCommand\": \"cd front && npm install\"\n}
+{
+  "buildCommand": "cd front && npm run build",
+  "outputDirectory": "front/.next",
+  "installCommand": "cd front && npm install"
+}
