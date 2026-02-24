@@ -3,7 +3,6 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { Listing } from "@/types";
 
 const ADMIN_TOKEN = process.env.NEXT_PUBLIC_BACKEND_ADMIN_TOKEN || "";
@@ -21,19 +20,18 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const [tab, setTab] = useState<"pending" | "all">("pending");
-  const router = useRouter();
 
-  async function fetchListings(tabType: "pending" | "all") {
+  async function fetchListings() {
     setLoading(true);
     try {
-      const endpoint = tabType === "pending" ? "/admin-api/listings/pending" : "/admin-api/listings/all";
-      const res = await fetch(endpoint, {
+      const res = await fetch("/admin-api/listings/all", {
         headers: { "X-Admin-Token": ADMIN_TOKEN },
       });
       if (!res.ok) throw new Error(`Error ${res.status}`);
       const data: Listing[] = await res.json();
-      setListings(Array.isArray(data) ? data : []);
+      // Filter to only published listings
+      const published = (Array.isArray(data) ? data : []).filter((l) => l.is_published);
+      setListings(published);
       setError("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar anuncios");
@@ -43,27 +41,27 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    fetchListings(tab);
-  }, [tab]);
+    fetchListings();
+  }, []);
 
-  async function publish(id: string) {
+  async function unpublish(id: string) {
     setBusy(id);
     try {
-      const res = await fetch(`/admin-api/listings/${id}/publish`, {
+      const res = await fetch(`/admin-api/listings/${id}/unpublish`, {
         method: "PATCH",
         headers: { "X-Admin-Token": ADMIN_TOKEN },
       });
       if (!res.ok) throw new Error(`Error ${res.status}`);
       setListings((prev) => prev.filter((l) => l.id !== id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al publicar");
+      alert(err instanceof Error ? err.message : "Error al despublicar");
     } finally {
       setBusy(null);
     }
   }
 
-  async function reject(id: string) {
-    if (!confirm("¿Eliminar este anuncio?")) return;
+  async function deleteListing(id: string) {
+    if (!confirm("¿Eliminar este anuncio permanentemente?")) return;
     setBusy(id);
     try {
       const res = await fetch(`/admin-api/listings/${id}`, {
@@ -79,31 +77,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function unpublish(id: string) {
-    setBusy(id);
-    try {
-      const res = await fetch(`/admin-api/listings/${id}/unpublish`, {
-        method: "PATCH",
-        headers: { "X-Admin-Token": ADMIN_TOKEN },
-      });
-      if (!res.ok) throw new Error(`Error ${res.status}`);
-      await fetchListings(tab);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al despublicar");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function handleLogout() {
-    try {
-      await fetch("/api/admin/auth/logout", { method: "POST" });
-    } catch (err) {
-      console.error("Error al cerrar sesión:", err);
-    }
-    router.push("/login");
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
@@ -113,10 +86,10 @@ export default function DashboardPage() {
             Panel de Moderación — Estudia&Vive Manizales
           </h1>
           <button
-            onClick={handleLogout}
-            className="rounded-lg bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
+            onClick={fetchListings}
+            className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 transition-colors"
           >
-            Cerrar sesión
+            Actualizar
           </button>
         </div>
       </nav>
@@ -124,36 +97,11 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900">
-            {tab === "pending" ? "Anuncios pendientes de moderación" : "Todos los anuncios"}
+            Anuncios Publicados
           </h2>
           <p className="mt-2 text-gray-600">
-            {listings.length} anuncio{listings.length !== 1 ? "s" : ""}
-            {tab === "pending" ? " esperando aprobación" : " publicados y pendientes"}
+            {listings.length} anuncio{listings.length !== 1 ? "s" : ""} activo{listings.length !== 1 ? "s" : ""}
           </p>
-
-          {/* Tabs */}
-          <div className="mt-4 flex gap-2 border-b border-gray-200">
-            <button
-              onClick={() => setTab("pending")}
-              className={`px-4 py-2 font-medium transition-colors ${
-                tab === "pending"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Pendientes
-            </button>
-            <button
-              onClick={() => setTab("all")}
-              className={`px-4 py-2 font-medium transition-colors ${
-                tab === "all"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Todos
-            </button>
-          </div>
         </div>
 
         {loading && (
@@ -171,9 +119,7 @@ export default function DashboardPage() {
         {!loading && !error && listings.length === 0 && (
           <div className="rounded-lg bg-white p-8 text-center">
             <p className="text-gray-500">
-              {tab === "pending"
-                ? "No hay anuncios pendientes por revisar."
-                : "No hay anuncios."}
+              No hay anuncios publicados actualmente.
             </p>
           </div>
         )}
@@ -201,15 +147,11 @@ export default function DashboardPage() {
                     )}
                   </div>
 
-                   {/* Info */}
+                  {/* Info */}
                    <div className="md:col-span-2 space-y-2">
                      <div className="flex items-center gap-2 flex-wrap">
-                       <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-                         listing.is_published 
-                           ? "bg-green-100 text-green-800"
-                           : "bg-yellow-100 text-yellow-800"
-                       }`}>
-                         {listing.is_published ? "✓ Publicado" : "⊙ Pendiente"}
+                       <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
+                         ✓ Publicado
                        </span>
                        <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
                          {listing.tipo}
@@ -246,54 +188,22 @@ export default function DashboardPage() {
                   </div>
 
                    {/* Actions */}
-                   <div className="md:col-span-1 flex flex-col gap-2 justify-center">
-                     {tab === "pending" ? (
-                       <>
-                         <button
-                           onClick={() => publish(listing.id)}
-                           disabled={busy === listing.id}
-                           className="rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-2 px-4 transition-colors"
-                         >
-                           {busy === listing.id ? "..." : "✓ Publicar"}
-                         </button>
-                         <button
-                           onClick={() => reject(listing.id)}
-                           disabled={busy === listing.id}
-                           className="rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-50 text-red-700 font-bold py-2 px-4 transition-colors"
-                         >
-                           {busy === listing.id ? "..." : "✕ Rechazar"}
-                         </button>
-                       </>
-                     ) : (
-                       <>
-                         {!listing.is_published && (
-                           <button
-                             onClick={() => publish(listing.id)}
-                             disabled={busy === listing.id}
-                             className="rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-2 px-4 transition-colors"
-                           >
-                             {busy === listing.id ? "..." : "✓ Publicar"}
-                           </button>
-                         )}
-                          {listing.is_published && (
-                            <button
-                              onClick={() => unpublish(listing.id)}
-                              disabled={busy === listing.id}
-                              className="rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-bold py-2 px-4 transition-colors"
-                            >
-                              {busy === listing.id ? "..." : "↺ Despublicar"}
-                            </button>
-                          )}
-                         <button
-                           onClick={() => reject(listing.id)}
-                           disabled={busy === listing.id}
-                           className="rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-50 text-red-700 font-bold py-2 px-4 transition-colors"
-                         >
-                           {busy === listing.id ? "..." : "🗑 Eliminar"}
-                         </button>
-                       </>
-                     )}
-                   </div>
+                    <div className="md:col-span-1 flex flex-col gap-2 justify-center">
+                      <button
+                        onClick={() => unpublish(listing.id)}
+                        disabled={busy === listing.id}
+                        className="rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-bold py-2 px-4 transition-colors"
+                      >
+                        {busy === listing.id ? "..." : "↺ Despublicar"}
+                      </button>
+                      <button
+                        onClick={() => deleteListing(listing.id)}
+                        disabled={busy === listing.id}
+                        className="rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-50 text-red-700 font-bold py-2 px-4 transition-colors"
+                      >
+                        {busy === listing.id ? "..." : "🗑 Eliminar"}
+                      </button>
+                    </div>
                 </div>
 
                 {/* ID para referencia */}
