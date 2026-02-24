@@ -95,8 +95,12 @@ export default function DashboardPage() {
     }
   }
 
-  function handleLogout() {
-    document.cookie = "admin_session=; path=/; max-age=0";
+  async function handleLogout() {
+    try {
+      await fetch("/api/admin/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Error al cerrar sesión:", err);
+    }
     router.push("/login");
   }
 
