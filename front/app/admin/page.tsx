@@ -23,23 +23,16 @@ export default function AdminPage() {
   async function fetchPending() {
     setLoading(true);
     try {
-      console.log("Fetching pending listings from /api/admin/listings?action=pending");
       const res = await fetch("/api/admin/listings?action=pending");
-      console.log("Response status:", res.status);
-      
       if (!res.ok) {
         const errorText = await res.text();
-        console.error("Error response:", errorText);
         throw new Error(`Error ${res.status}: ${errorText}`);
       }
-      
       const data: Listing[] = await res.json();
-      console.log("Data received:", data);
       setListings(Array.isArray(data) ? data : []);
       setError("");
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Error de conexión";
-      console.error("Fetch error:", errorMsg);
       setError(errorMsg);
     } finally {
       setLoading(false);
