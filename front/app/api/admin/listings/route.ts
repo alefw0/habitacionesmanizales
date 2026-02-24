@@ -72,6 +72,14 @@ export async function DELETE(request: NextRequest) {
 async function handleGetPending() {
   const url = `${BACKEND_URL}/admin/listings/pending`;
 
+  if (!ADMIN_TOKEN) {
+    console.error("handleGetPending: ADMIN_TOKEN is empty!");
+    return NextResponse.json(
+      { error: "ADMIN_TOKEN no está configurado en el servidor" },
+      { status: 500 }
+    );
+  }
+
   try {
     const res = await fetch(url, {
       method: "GET",
@@ -80,12 +88,16 @@ async function handleGetPending() {
       },
     });
 
+    if (!res.ok) {
+      console.error(`Backend returned ${res.status} for ${url}`);
+    }
+
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (err) {
     console.error("Error en proxy pending:", err);
     return NextResponse.json(
-      { error: "Error al obtener listados pendientes" },
+      { error: "Error al obtener listados pendientes", details: String(err) },
       { status: 500 }
     );
   }
