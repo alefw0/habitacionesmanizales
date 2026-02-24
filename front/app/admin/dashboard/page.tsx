@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { Listing } from "@/types";
 
 const ADMIN_TOKEN = process.env.NEXT_PUBLIC_BACKEND_ADMIN_TOKEN || "";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://habitacionesmanizales-production.up.railway.app";
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("es-CO", {
@@ -21,20 +22,47 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
 
+  // Mostrar error si no hay token
+  if (!ADMIN_TOKEN) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <nav className="sticky top-0 z-40 bg-white shadow-sm">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+            <h1 className="text-lg font-bold text-blue-900">Panel de Moderación — Estudia&Vive Manizales</h1>
+          </div>
+        </nav>
+        <main className="mx-auto max-w-7xl px-4 py-8">
+          <div className="rounded-lg bg-red-50 p-6 border border-red-200">
+            <p className="text-red-700 font-bold">❌ Error de configuración</p>
+            <p className="text-red-600 text-sm mt-2">La variable NEXT_PUBLIC_BACKEND_ADMIN_TOKEN no está configurada en Vercel.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   async function fetchListings() {
     setLoading(true);
     try {
-      const res = await fetch("/admin-api/listings/all", {
+      // Llamar directamente al backend (sin rewrite)
+      const url = `${BACKEND_URL}/admin/listings/all`;
+      console.log("Fetching from:", url);
+      const res = await fetch(url, {
         headers: { "X-Admin-Token": ADMIN_TOKEN },
       });
-      if (!res.ok) throw new Error(`Error ${res.status}`);
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`Error ${res.status}: ${text || "sin detalles"}`);
+      }
       const data: Listing[] = await res.json();
       // Filter to only published listings
       const published = (Array.isArray(data) ? data : []).filter((l) => l.is_published);
       setListings(published);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar anuncios");
+      const message = err instanceof Error ? err.message : "Error al cargar anuncios";
+      setError(message);
+      console.error("Fetch error:", err);
     } finally {
       setLoading(false);
     }
@@ -47,7 +75,8 @@ export default function DashboardPage() {
   async function unpublish(id: string) {
     setBusy(id);
     try {
-      const res = await fetch(`/admin-api/listings/${id}/unpublish`, {
+      const url = `${BACKEND_URL}/admin/listings/${id}/unpublish`;
+      const res = await fetch(url, {
         method: "PATCH",
         headers: { "X-Admin-Token": ADMIN_TOKEN },
       });
@@ -64,7 +93,8 @@ export default function DashboardPage() {
     if (!confirm("¿Eliminar este anuncio permanentemente?")) return;
     setBusy(id);
     try {
-      const res = await fetch(`/admin-api/listings/${id}`, {
+      const url = `${BACKEND_URL}/admin/listings/${id}`;
+      const res = await fetch(url, {
         method: "DELETE",
         headers: { "X-Admin-Token": ADMIN_TOKEN },
       });
@@ -111,8 +141,9 @@ export default function DashboardPage() {
         )}
 
         {!loading && error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-red-700">
-            {error}
+          <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-red-700 font-mono text-sm">
+            <p className="font-bold mb-2">Error:</p>
+            <p>{error}</p>
           </div>
         )}
 
