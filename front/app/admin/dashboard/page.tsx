@@ -79,6 +79,22 @@ export default function DashboardPage() {
     }
   }
 
+  async function unpublish(id: string) {
+    setBusy(id);
+    try {
+      const res = await fetch(`/admin-api/listings/${id}/unpublish`, {
+        method: "PATCH",
+        headers: { "X-Admin-Token": ADMIN_TOKEN },
+      });
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      await fetchListings(tab);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error al despublicar");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   function handleLogout() {
     document.cookie = "admin_session=; path=/; max-age=0";
     router.push("/login");
@@ -150,7 +166,11 @@ export default function DashboardPage() {
 
         {!loading && !error && listings.length === 0 && (
           <div className="rounded-lg bg-white p-8 text-center">
-            <p className="text-gray-500">No hay anuncios pendientes por revisar.</p>
+            <p className="text-gray-500">
+              {tab === "pending"
+                ? "No hay anuncios pendientes por revisar."
+                : "No hay anuncios."}
+            </p>
           </div>
         )}
 
@@ -251,15 +271,15 @@ export default function DashboardPage() {
                              {busy === listing.id ? "..." : "✓ Publicar"}
                            </button>
                          )}
-                         {listing.is_published && (
-                           <button
-                             onClick={() => reject(listing.id)}
-                             disabled={busy === listing.id}
-                             className="rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-bold py-2 px-4 transition-colors"
-                           >
-                             {busy === listing.id ? "..." : "↺ Despublicar"}
-                           </button>
-                         )}
+                          {listing.is_published && (
+                            <button
+                              onClick={() => unpublish(listing.id)}
+                              disabled={busy === listing.id}
+                              className="rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-bold py-2 px-4 transition-colors"
+                            >
+                              {busy === listing.id ? "..." : "↺ Despublicar"}
+                            </button>
+                          )}
                          <button
                            onClick={() => reject(listing.id)}
                            disabled={busy === listing.id}
