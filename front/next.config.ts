@@ -9,12 +9,7 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: `${backendUrl}/api/:path*`,
       },
-      {
-        source: "/listings/:path*",
-        destination: `${backendUrl}/listings/:path*`,
-      },
-    ];
-  },
+      {\n        source: \"/listings/:path*\",\n        destination: `${backendUrl}/listings/:path*`,\n      },\n      {\n        source: \"/admin-api/:path*\",\n        destination: `${backendUrl}/admin/:path*`,\n      },\n    ];\n  },
 };
 
 export default nextConfig;
