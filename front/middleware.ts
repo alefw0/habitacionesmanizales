@@ -8,14 +8,19 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Check auth for /admin page and all /admin/* routes (except /login)
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+  // Allow /admin (login page) without authentication
+  if (pathname === "/admin") {
+    return NextResponse.next();
+  }
+
+  // Check auth for /admin/dashboard and other protected routes
+  if (pathname.startsWith("/admin/")) {
     const session = request.cookies.get("admin_session");
     if (session && session.value === "authenticated") {
       return NextResponse.next();
     }
     // Redirect to login if not authenticated
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/admin", request.url));
   }
 }
 

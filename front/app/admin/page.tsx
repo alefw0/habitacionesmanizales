@@ -29,7 +29,8 @@ export default function LoginPage() {
         throw new Error(data.error || "Contraseña incorrecta");
       }
 
-      router.push("/admin");
+      // Redirect to dashboard after successful login
+      router.push("/admin/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
     } finally {
