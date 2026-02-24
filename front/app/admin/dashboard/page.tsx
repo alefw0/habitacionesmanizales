@@ -21,12 +21,14 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [tab, setTab] = useState<"pending" | "all">("pending");
   const router = useRouter();
 
-  async function fetchPending() {
+  async function fetchListings(tabType: "pending" | "all") {
     setLoading(true);
     try {
-      const res = await fetch("/admin-api/listings/pending", {
+      const endpoint = tabType === "pending" ? "/admin-api/listings/pending" : "/admin-api/listings/all";
+      const res = await fetch(endpoint, {
         headers: { "X-Admin-Token": ADMIN_TOKEN },
       });
       if (!res.ok) throw new Error(`Error ${res.status}`);
@@ -41,8 +43,8 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    fetchPending();
-  }, []);
+    fetchListings(tab);
+  }, [tab]);
 
   async function publish(id: string) {
     setBusy(id);
@@ -102,11 +104,36 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900">
-            Anuncios pendientes de moderación
+            {tab === "pending" ? "Anuncios pendientes de moderación" : "Todos los anuncios"}
           </h2>
           <p className="mt-2 text-gray-600">
-            {listings.length} anuncio{listings.length !== 1 ? "s" : ""} esperando aprobación
+            {listings.length} anuncio{listings.length !== 1 ? "s" : ""}
+            {tab === "pending" ? " esperando aprobación" : " publicados y pendientes"}
           </p>
+
+          {/* Tabs */}
+          <div className="mt-4 flex gap-2 border-b border-gray-200">
+            <button
+              onClick={() => setTab("pending")}
+              className={`px-4 py-2 font-medium transition-colors ${
+                tab === "pending"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Pendientes
+            </button>
+            <button
+              onClick={() => setTab("all")}
+              className={`px-4 py-2 font-medium transition-colors ${
+                tab === "all"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Todos
+            </button>
+          </div>
         </div>
 
         {loading && (
@@ -150,16 +177,20 @@ export default function DashboardPage() {
                     )}
                   </div>
 
-                  {/* Info */}
-                  <div className="md:col-span-2 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800">
-                        Pendiente
-                      </span>
-                      <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
-                        {listing.tipo}
-                      </span>
-                    </div>
+                   {/* Info */}
+                   <div className="md:col-span-2 space-y-2">
+                     <div className="flex items-center gap-2 flex-wrap">
+                       <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                         listing.is_published 
+                           ? "bg-green-100 text-green-800"
+                           : "bg-yellow-100 text-yellow-800"
+                       }`}>
+                         {listing.is_published ? "✓ Publicado" : "⊙ Pendiente"}
+                       </span>
+                       <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                         {listing.tipo}
+                       </span>
+                     </div>
 
                     <h3 className="text-lg font-bold text-gray-900">
                       {listing.title}
@@ -190,23 +221,55 @@ export default function DashboardPage() {
                     </p>
                   </div>
 
-                  {/* Actions */}
-                  <div className="md:col-span-1 flex flex-col gap-2 justify-center">
-                    <button
-                      onClick={() => publish(listing.id)}
-                      disabled={busy === listing.id}
-                      className="rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-2 px-4 transition-colors"
-                    >
-                      {busy === listing.id ? "..." : "✓ Publicar"}
-                    </button>
-                    <button
-                      onClick={() => reject(listing.id)}
-                      disabled={busy === listing.id}
-                      className="rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-50 text-red-700 font-bold py-2 px-4 transition-colors"
-                    >
-                      {busy === listing.id ? "..." : "✕ Rechazar"}
-                    </button>
-                  </div>
+                   {/* Actions */}
+                   <div className="md:col-span-1 flex flex-col gap-2 justify-center">
+                     {tab === "pending" ? (
+                       <>
+                         <button
+                           onClick={() => publish(listing.id)}
+                           disabled={busy === listing.id}
+                           className="rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-2 px-4 transition-colors"
+                         >
+                           {busy === listing.id ? "..." : "✓ Publicar"}
+                         </button>
+                         <button
+                           onClick={() => reject(listing.id)}
+                           disabled={busy === listing.id}
+                           className="rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-50 text-red-700 font-bold py-2 px-4 transition-colors"
+                         >
+                           {busy === listing.id ? "..." : "✕ Rechazar"}
+                         </button>
+                       </>
+                     ) : (
+                       <>
+                         {!listing.is_published && (
+                           <button
+                             onClick={() => publish(listing.id)}
+                             disabled={busy === listing.id}
+                             className="rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-2 px-4 transition-colors"
+                           >
+                             {busy === listing.id ? "..." : "✓ Publicar"}
+                           </button>
+                         )}
+                         {listing.is_published && (
+                           <button
+                             onClick={() => reject(listing.id)}
+                             disabled={busy === listing.id}
+                             className="rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-bold py-2 px-4 transition-colors"
+                           >
+                             {busy === listing.id ? "..." : "↺ Despublicar"}
+                           </button>
+                         )}
+                         <button
+                           onClick={() => reject(listing.id)}
+                           disabled={busy === listing.id}
+                           className="rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-50 text-red-700 font-bold py-2 px-4 transition-colors"
+                         >
+                           {busy === listing.id ? "..." : "🗑 Eliminar"}
+                         </button>
+                       </>
+                     )}
+                   </div>
                 </div>
 
                 {/* ID para referencia */}

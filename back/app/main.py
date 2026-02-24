@@ -375,6 +375,22 @@ def admin_unpublish_listing(
     return listing
 
 
+@app.get("/admin/listings/all", response_model=list[ListingResponse])
+def admin_list_all_listings(
+    db: Session = Depends(get_db),
+    _: None = Depends(_require_admin),
+):
+    """
+    Lista TODOS los anuncios (publicados + pendientes), ordenados por fecha.
+    Útil para administración y limpieza.
+    """
+    return (
+        db.query(Listing)
+        .order_by(Listing.created_at.desc())
+        .all()
+    )
+
+
 @app.delete("/admin/listings/{listing_id}", status_code=200)
 def admin_delete_listing(
     listing_id: str,
@@ -382,7 +398,7 @@ def admin_delete_listing(
     _: None = Depends(_require_admin),
 ):
     """
-    Elimina permanentemente un anuncio.
+    Elimina permanentemente un anuncio (publicado o pendiente).
     """
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
