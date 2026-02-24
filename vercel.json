@@ -1,9 +1,10 @@
 {
   "buildCommand": "cd front && npm run build",
   "outputDirectory": "front/.next",
-  "installCommand": "npm install",
+  "installCommand": "cd front && npm install",
   "env": {
     "BACKEND_URL": "@backend_url",
-    "ADMIN_TOKEN": "@admin_token"
+    "ADMIN_TOKEN": "@admin_token",
+    "ADMIN_PASSWORD": "@admin_password"
   }
 }
